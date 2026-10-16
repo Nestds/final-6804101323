@@ -1,0 +1,38 @@
+import { test, expect } from '@playwright/test';
+
+test('IT-01: top-down REAL Login -> browser-level Inventory STUB', {
+  annotation: {
+    type: 'description',
+    description: 'ทดสอบ Login จริงร่วมกับ Inventory Stub ที่จำลองด้วย page.setContent()'
+  }
+}, async ({ page }) => {
+  await test.step('Login ผ่านหน้าเว็บไซต์จริง', async () => {
+    await page.goto('/');
+    await page.locator('[data-test="username"]').fill('standard_user');
+    await page.locator('[data-test="password"]').fill('secret_sauce');
+    await page.locator('[data-test="login-button"]').click();
+    await expect(page).toHaveURL(/inventory\.html/);
+  });
+
+  await test.step('สร้าง Inventory Stub', async () => {
+    await page.setContent(`
+      <!doctype html>
+      <html>
+        <body>
+          <h1 data-testid="stub-status">Mock Inventory Ready</h1>
+          <ul data-testid="stub-inventory">
+            <li class="mock-item">Mock Backpack</li>
+            <li class="mock-item">Mock Bike Light</li>
+          </ul>
+        </body>
+      </html>
+    `);
+  });
+
+  await test.step('ตรวจสอบผลจาก Stub', async () => {
+    await expect(page.getByTestId('stub-status')).toHaveText('Mock Inventory Ready');
+    const items = page.locator('.mock-item');
+    await expect(items).toHaveCount(2);
+    await expect(items).toHaveText(['Mock Backpack', 'Mock Bike Light']);
+  });
+});
